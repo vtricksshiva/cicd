@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello! GitHub Actions deployed this Flask app on EC2 🎉"
+    return "Deployed using GitHub Actions + EC2 with systemd!"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
