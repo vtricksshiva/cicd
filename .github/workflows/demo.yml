@@ -1,4 +1,4 @@
-name: Python CI/CD Demo
+name: Demo CI/CD
 
 on:
   push:
@@ -10,17 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
+      - name: Install Python Deps
         run: |
-          pip install -r requirements.txt
+          python3 -m pip install --upgrade pip
+          pip3 install -r requirements.txt
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
@@ -29,15 +25,29 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "🚀 Starting Deployment..."
+
+            # Create deployment folder
             sudo mkdir -p /opt/demo-app
             sudo chown ubuntu:ubuntu /opt/demo-app
             cd /opt/demo-app
 
+            echo "📥 Fetching latest code..."
             if [ -d .git ]; then
               git pull origin main
             else
-              git clone https://github.com/vtricksshiva/cicd.git .
+              git clone https://github.com/<your-username>/<your-repo>.git .
             fi
 
+            echo "📦 Installing requirements..."
+            pip3 install --upgrade pip
             pip3 install -r requirements.txt
-            python3 cicd_demo.py
+
+            echo "🛑 Stopping old server..."
+            pkill -f "python3 app.py" || true
+
+            echo "🚀 Starting Flask App..."
+            nohup python3 app.py > app.log 2>&1 &
+
+            echo "🎉 Deployment completed!"
+
