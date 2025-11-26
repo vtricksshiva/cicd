@@ -22,10 +22,10 @@ jobs:
           script: |
             echo "🚀 Starting Deployment..."
 
-            # Install Python3 and proper venv package
-            echo "📦 Installing Python3 and virtual environment support..."
+            # Install Python3 and pip
+            echo "📦 Installing Python3..."
             sudo apt update
-            sudo apt install -y python3 python3-full python3-venv
+            sudo apt install -y python3 python3-pip
 
             # Create deployment folder
             sudo mkdir -p /opt/demo-app
@@ -39,41 +39,48 @@ jobs:
               git clone https://github.com/vtricksshiva/cicd.git .
             fi
 
-            echo "📦 Setting up Python virtual environment..."
-            # Remove old venv if exists and create new one
-            rm -rf venv
-            python3 -m venv venv --without-pip
-            # Install pip manually if needed
-            curl -sS https://bootstrap.pypa.io/get-pip.py | venv/bin/python
-
-            echo "📦 Installing Python requirements in virtual environment..."
-            venv/bin/pip install --upgrade pip
-            venv/bin/pip install -r requirements.txt
+            echo "📦 Installing Python requirements..."
+            pip3 install --break-system-packages -r requirements.txt
 
             echo "🛑 Stopping old server..."
-            # Kill any existing processes
-            pkill -f "python3 app.py" || true
-            pkill -f "venv/bin/python app.py" || true
-            sleep 2
+            # Stop any running Flask app
+            sudo pkill -f "python3 app.py" || true
+            sleep 3
 
             echo "🚀 Starting Flask App..."
-            # Start from virtual environment
+            # Start the application directly
             cd /opt/demo-app
-            nohup venv/bin/python app.py > app.log 2>&1 &
+            nohup python3 app.py > app.log 2>&1 &
             echo $! > app.pid
 
+            echo "⏳ Waiting for app to start..."
+            sleep 8
+
             echo "✅ Verifying deployment..."
-            sleep 5
+            # Check if process is running
             if ps -p $(cat app.pid 2>/dev/null) > /dev/null 2>&1; then
-              echo "🎉 Deployment completed successfully!"
-              echo "📊 Process info:"
-              ps -p $(cat app.pid)
-              echo "🌐 Checking if app is responsive..."
-              sleep 3
-              curl -f http://localhost:5000/ || echo "App might not be fully started yet"
+              echo "✅ Process is running with PID: $(cat app.pid)"
+              
+              echo "🌐 Testing application endpoint..."
+              # Test the application
+              if curl -s -f http://localhost:5000/ > /dev/null 2>&1; then
+                echo "🎉 SUCCESS: Application is running and responding correctly!"
+                echo "📝 Response: $(curl -s http://localhost:5000/)"
+              else
+                echo "⚠️ WARNING: Process running but app not responding on port 5000"
+                echo "📋 Checking network status..."
+                netstat -tulpn | grep :5000 || echo "Port 5000 not found in listening state"
+                echo "📄 App log contents:"
+                tail -20 app.log
+              fi
             else
-              echo "❌ Deployment failed - process not running"
-              echo "📋 Checking app.log for errors:"
-              tail -20 app.log || echo "No log file found"
+              echo "❌ ERROR: Process failed to start"
+              echo "📄 Checking application logs:"
+              tail -50 app.log
+              echo "🔍 Checking Python processes:"
+              ps aux | grep python | grep -v grep
               exit 1
             fi
+
+            echo "🔒 Checking security group settings..."
+            echo "Note: Ensure your EC2 security group allows inbound traffic on port 5000"
