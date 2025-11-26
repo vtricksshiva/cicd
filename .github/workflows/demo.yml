@@ -22,18 +22,11 @@ jobs:
           script: |
             echo "🚀 Starting Deployment..."
 
-            # Install Python3 and pip if not present
+            # Install Python3 and venv if not present
             if ! command -v python3 &> /dev/null; then
               echo "📦 Installing Python3..."
               sudo apt update
-              sudo apt install -y python3 python3-pip
-            fi
-
-            # Ensure pip is installed
-            if ! python3 -m pip --version &> /dev/null; then
-              echo "📦 Installing pip..."
-              sudo apt update
-              sudo apt install -y python3-pip
+              sudo apt install -y python3 python3-venv
             fi
 
             # Create deployment folder
@@ -48,22 +41,26 @@ jobs:
               git clone https://github.com/vtricksshiva/cicd.git .
             fi
 
-            echo "📦 Installing Python requirements..."
-            # Use ensurepip to install pip if missing
-            python3 -m ensurepip --upgrade || true
-            python3 -m pip install --upgrade pip
-            python3 -m pip install -r requirements.txt
+            echo "📦 Setting up Python virtual environment..."
+            # Create and activate virtual environment
+            python3 -m venv venv
+            source venv/bin/activate
+
+            echo "📦 Installing Python requirements in virtual environment..."
+            pip install --upgrade pip
+            pip install -r requirements.txt
 
             echo "🛑 Stopping old server..."
-            # More specific process killing to avoid unintended kills
+            # Kill any existing processes
             pkill -f "python3 app.py" || true
-            sleep 2  # Wait for process to fully terminate
+            pkill -f "venv/bin/python app.py" || true
+            sleep 2
 
             echo "🚀 Starting Flask App..."
-            # Use absolute path and better process management
+            # Start from virtual environment
             cd /opt/demo-app
-            nohup python3 app.py > app.log 2>&1 &
-            echo $! > app.pid  # Save PID for future reference
+            nohup venv/bin/python app.py > app.log 2>&1 &
+            echo $! > app.pid
 
             echo "✅ Verifying deployment..."
             sleep 5
@@ -71,6 +68,8 @@ jobs:
               echo "🎉 Deployment completed successfully!"
               echo "📊 Process info:"
               ps -p $(cat app.pid)
+              echo "🌐 Checking if app is responsive..."
+              curl -f http://localhost:5000/ || echo "App might not be fully started yet"
             else
               echo "❌ Deployment failed - process not running"
               echo "📋 Checking app.log for errors:"
