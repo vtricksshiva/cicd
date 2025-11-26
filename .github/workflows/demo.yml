@@ -13,11 +13,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Python Deps
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install -r requirements.txt
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -26,6 +21,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "🚀 Starting Deployment..."
+
+            # Install Python3 and pip if not present
+            if ! command -v python3 &> /dev/null; then
+              echo "📦 Installing Python3..."
+              sudo apt update
+              sudo apt install -y python3 python3-pip
+            fi
 
             # Create deployment folder
             sudo mkdir -p /opt/demo-app
@@ -36,18 +38,31 @@ jobs:
             if [ -d .git ]; then
               git pull origin main
             else
-              git clone https://github.com/<your-username>/<your-repo>.git .
+              git clone https://github.com/vtricksshiva/cicd.git .
             fi
 
-            echo "📦 Installing requirements..."
-            pip3 install --upgrade pip
-            pip3 install -r requirements.txt
+            echo "📦 Installing Python requirements..."
+            # Use python3 -m pip to ensure we're using the correct pip
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r requirements.txt
 
             echo "🛑 Stopping old server..."
+            # More specific process killing to avoid unintended kills
             pkill -f "python3 app.py" || true
+            sleep 2  # Wait for process to fully terminate
 
             echo "🚀 Starting Flask App..."
+            # Use absolute path and better process management
             nohup python3 app.py > app.log 2>&1 &
+            echo $! > app.pid  # Save PID for future reference
 
-            echo "🎉 Deployment completed!"
-
+            echo "✅ Verifying deployment..."
+            sleep 5
+            if ps -p $(cat app.pid) > /dev/null 2>&1; then
+              echo "🎉 Deployment completed successfully!"
+            else
+              echo "❌ Deployment failed - process not running"
+              echo "📋 Checking app.log for errors:"
+              tail -20 app.log || echo "No log file found"
+              exit 1
+            fi
