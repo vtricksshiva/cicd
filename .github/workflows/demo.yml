@@ -45,7 +45,6 @@ jobs:
         script: |
           cd /home/ubuntu/flask-app
           
-          # List files to verify they exist
           echo "Files in deployment directory:"
           ls -la
           
@@ -65,16 +64,32 @@ jobs:
           sudo pkill -f "gunicorn" || true
           sudo pkill -f "python3 app.py" || true
           
-          # Start the application with gunicorn
+          # Start the application with gunicorn and capture PID
           nohup gunicorn --bind 0.0.0.0:5000 app:app > app.log 2>&1 &
+          GUNICORN_PID=$!
           
-          # Wait and check status
+          # Wait a bit for the application to start
           sleep 5
-          echo "Checking if application is running:"
-          ps aux | grep gunicorn | grep -v grep && echo "✅ Application is running!" || echo "❌ Application failed to start"
           
-          # Check the log file
-          echo "Last 10 lines of app.log:"
-          tail -10 app.log || echo "No log file yet"
+          echo "=== Deployment Status ==="
           
-          echo "Deployment completed successfully!"
+          # Check if gunicorn process is running
+          if ps -p $GUNICORN_PID > /dev/null; then
+            echo "✅ Gunicorn is running with PID: $GUNICORN_PID"
+          else
+            echo "❌ Gunicorn process not found"
+          fi
+          
+          # Check for any gunicorn processes
+          echo "Gunicorn processes:"
+          ps aux | grep gunicorn | grep -v grep || echo "No gunicorn processes found"
+          
+          # Check application log
+          echo "Application log:"
+          tail -20 app.log || echo "No log file available"
+          
+          # Test if application is responding
+          echo "Testing application endpoint..."
+          curl -f http://localhost:5000/ && echo "✅ Application is responding!" || echo "❌ Application not responding"
+          
+          echo "=== Deployment completed successfully! ==="
