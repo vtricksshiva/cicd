@@ -1,115 +1,65 @@
-name: Demo CI/CD
+name: Deploy to AWS EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "🚀 Starting Deployment..."
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-            # Install Python3 and pip
-            echo "📦 Installing Python3..."
-            sudo apt update
-            sudo apt install -y python3 python3-pip
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-            # Create deployment folder
-            sudo mkdir -p /opt/demo-app
-            sudo chown ubuntu:ubuntu /opt/demo-app
-            cd /opt/demo-app
+    - name: Run tests
+      run: |
+        # Add your tests here
+        echo "Running tests..."
 
-            echo "📥 Fetching latest code..."
-            if [ -d .git ]; then
-              git pull origin main
-            else
-              git clone https://github.com/vtricksshiva/cicd.git .
-            fi
-
-            echo "📦 Installing Python requirements..."
-            # Use --user flag to avoid permission issues
-            pip3 install --user --break-system-packages -r requirements.txt
-
-            echo "🛑 Stopping old server..."
-            # More comprehensive process cleanup
-            sudo pkill -f "python3.*app.py" || true
-            sleep 5
-            # Double check and force kill if needed
-            sudo pkill -9 -f "python3.*app.py" || true
-            sleep 2
-
-            echo "🚀 Starting Flask App..."
-            cd /opt/demo-app
-            
-            # Clean up any existing pid file
-            rm -f app.pid
-            
-            # Start the application with full path to python and explicit environment
-            /usr/bin/python3 app.py > app.log 2>&1 &
-            APP_PID=$!
-            echo $APP_PID > app.pid
-            
-            echo "Started app with PID: $APP_PID"
-            sleep 3
-
-            echo "✅ Verifying deployment..."
-            
-            # Check 1: Is the process still running?
-            if ps -p $APP_PID > /dev/null 2>&1; then
-              echo "✅ Main process $APP_PID is running"
-            else
-              echo "❌ Main process $APP_PID stopped"
-              echo "📄 Checking app.log for errors:"
-              cat app.log
-              echo "🔍 Checking for any Python processes:"
-              ps aux | grep python | grep -v grep
-              exit 1
-            fi
-
-            # Check 2: Is the application listening on port 5000?
-            echo "🌐 Checking port 5000..."
-            if netstat -tulpn 2>/dev/null | grep :5000 > /dev/null; then
-              echo "✅ Port 5000 is listening"
-            else
-              echo "❌ Port 5000 is not listening"
-              echo "Checking with ss command:"
-              ss -tulpn | grep :5000 || echo "Port 5000 not found with ss"
-            fi
-
-            # Check 3: Test the application endpoint
-            echo "🔍 Testing application response..."
-            sleep 5
-            if curl -s -f http://localhost:5000/ > /dev/null 2>&1; then
-              echo "🎉 SUCCESS: Application is responding!"
-              echo "📝 Response: $(curl -s http://localhost:5000/)"
-            else
-              echo "⚠️ Application not responding to curl"
-              echo "Trying with verbose output:"
-              curl -v http://localhost:5000/ || true
-            fi
-
-            # Final process check
-            if ps -p $APP_PID > /dev/null 2>&1; then
-              echo "🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!"
-              echo "📊 Process details:"
-              ps -p $APP_PID -o pid,ppid,cmd
-              echo "🌐 Your app should be accessible at: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):5000/"
-            else
-              echo "❌ DEPLOYMENT FAILED - Process died"
-              echo "📄 Final app.log contents:"
-              tail -50 app.log
-              exit 1
-            fi
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Create directory if it doesn't exist
+          mkdir -p /home/ubuntu/flask-app
+          
+          # Navigate to app directory
+          cd /home/ubuntu/flask-app
+          
+          # Create virtual environment if it doesn't exist
+          if [ ! -d "venv" ]; then
+            python3 -m venv venv
+          fi
+          
+          # Activate virtual environment
+          source venv/bin/activate
+          
+          # Install/update dependencies
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          
+          # Stop any existing application
+          sudo pkill -f "gunicorn" || true
+          sudo pkill -f "python3 app.py" || true
+          
+          # Start the application with gunicorn
+          nohup gunicorn --bind 0.0.0.0:5000 app:app > app.log 2>&1 &
+          
+          echo "Deployment completed successfully!"

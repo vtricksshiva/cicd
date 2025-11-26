@@ -1,11 +1,30 @@
-from flask import Flask
+from flask import Flask, jsonify
+import os
 
 app = Flask(__name__)
 
-@app.get("/")
+@app.route('/')
 def home():
-    return "CI/CD Deployment Successful! Welcome to the Demo App."
+    return jsonify({
+        'message': 'Hello from Flask App!',
+        'status': 'success',
+        'version': '1.0.0'
+    })
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'service': 'flask-app'
+    })
+
+@app.route('/info')
+def info():
+    return jsonify({
+        'environment': os.getenv('ENVIRONMENT', 'development'),
+        'deployed_by': 'GitHub Actions'
+    })
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
