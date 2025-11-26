@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r cicd/requirements.txt
+          pip install -r requirements.txt
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
