@@ -1,42 +1,26 @@
-name: Demo CI Pipeline
-
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
-
-      - name: Run Script
-        run: |
-          python cicd_demo.py
-
-      - name: Deploy to EC2 using SSH
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Create directory if not exists
+            sudo mkdir -p /opt/demo-app
+            sudo chown ubuntu:ubuntu /opt/demo-app
+
             cd /opt/demo-app
+
+            # Clone or update the repo
             if [ -d .git ]; then
               git pull origin main
             else
-              git clone https://github.com/<your-username>/github-actions-demo.git .
+              git clone https://github.com/vtricksshiva/cicd.git .
             fi
+
+            # Install dependencies
+            pip3 install -r requirements.txt
+
+            # Execute python program
             python3 cicd_demo.py
+
