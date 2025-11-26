@@ -1,0 +1,11 @@
+- name: Deploy to EC2 using SSH
+  uses: appleboy/ssh-action@v0.1.7
+  with:
+    host: YOUR_EC2_PUBLIC_IP
+    username: ubuntu
+    key: ${{ secrets.SSH_PRIVATE_KEY }}
+    script: |
+      cd /opt/demo-app
+      git pull origin main || git clone https://github.com/<your-username>/github-actions-demo.git .
+      python3 cicd_demo.py
+
