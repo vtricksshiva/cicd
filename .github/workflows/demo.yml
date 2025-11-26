@@ -1,26 +1,43 @@
+name: Python CI/CD Demo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r cicd/requirements.txt
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Create directory if not exists
             sudo mkdir -p /opt/demo-app
             sudo chown ubuntu:ubuntu /opt/demo-app
-
             cd /opt/demo-app
 
-            # Clone or update the repo
             if [ -d .git ]; then
               git pull origin main
             else
               git clone https://github.com/vtricksshiva/cicd.git .
             fi
 
-            # Install dependencies
             pip3 install -r requirements.txt
-
-            # Execute python program
             python3 cicd_demo.py
-
