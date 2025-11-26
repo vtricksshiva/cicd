@@ -1,65 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask UI Demo</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vtricks Technologies</title>
 
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f1f1f1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: "Inter", Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1a0b3c;
+            line-height: 1.6;
         }
 
-        .card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        /* hero section */
+        .hero {
+            padding: 100px 20px;
             text-align: center;
-            width: 380px;
+            background: #f5f4ff;
         }
-
-        h1 {
-            margin-bottom: 10px;
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+        }
+        .hero p {
+            font-size: 20px;
+            margin-top: 10px;
             color: #333;
         }
 
-        p {
-            color: #666;
-            margin-bottom: 20px;
+        /* Why Choose section */
+        .section {
+            padding: 70px 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .section h2 {
+            font-size: 42px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .why-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        .why-box {
+            display: flex;
+            align-items: start;
+            gap: 15px;
+        }
+        .why-box span {
+            font-size: 22px;
+            color: #4b0082;
+        }
+        .why-box p {
+            font-size: 19px;
+            color: #333;
         }
 
-        button {
-            background: #4CAF50;
+        /* Contact section */
+        .contact-section {
+            padding: 70px 20px;
+            background-color: #f9f9ff;
+        }
+        .contact-wrapper {
+            max-width: 1100px;
+            margin: auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+        }
+        .contact-card {
+            background: #fff;
+            width: 320px;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+        .contact-card h3 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        .contact-card p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* footer */
+        footer {
+            padding: 25px;
+            text-align: center;
+            background: #1a0b3c;
             color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background: #45a049;
+            margin-top: 40px;
         }
     </style>
 </head>
+
 <body>
 
-    <div class="card">
-        <h1>🚀 Deployed Successfully!</h1>
-        <p>This Flask application was deployed using GitHub Actions → AWS EC2.</p>
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <h1>Welcome to Vtricks Technologies</h1>
+        <p>Your trusted partner in Digital Transformation, IT Training & Consulting</p>
+    </section>
 
-        <button onclick="alert('Hello from your EC2 Instance!')">
-            Click Me
-        </button>
-    </div>
+    <!-- WHY CHOOSE SECTION -->
+    <section class="section">
+        <h2>Why Choose Vtricks Technologies?</h2>
+
+        <div class="why-container">
+            <div class="why-box">
+                <span>✔</span>
+                <p>Over 500 successful placements</p>
+            </div>
+            <div class="why-box">
+                <span>✔</span>
+                <p>Presence across key domains like Manufacturing, Banking, Education & Finance</p>
+            </div>
+            <div class="why-box">
+                <span>✔</span>
+                <p>Experienced team of trainers & consultants</p>
+            </div>
+            <div class="why-box">
+                <span>✔</span>
+                <p>Tailored training and consulting solutions</p>
+            </div>
+            <div class="why-box">
+                <span>✔</span>
+                <p>A trusted partner in your digital transformation journey</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT SECTION -->
+    <section class="contact-section">
+        <h2 style="text-align:center; font-size:42px; margin-bottom:40px;">Contact Us</h2>
+
+        <div class="contact-wrapper">
+            
+            <div class="contact-card">
+                <h3>📍 Visit Us</h3>
+                <p>
+                    52 E, 15th Main Rd, Vijayanagar,<br>
+                    Bengaluru, Karnataka 560040
+                </p>
+            </div>
+
+            <div class="contact-card">
+                <h3>📞 Call Us</h3>
+                <p>+91 96207 49749</p>
+            </div>
+
+            <div class="contact-card">
+                <h3>✉️ Email Us</h3>
+                <p>web@vtricks.in</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        © 2025 Vtricks Technologies. All Rights Reserved.
+    </footer>
 
 </body>
 </html>
