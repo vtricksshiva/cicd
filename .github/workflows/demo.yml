@@ -29,6 +29,13 @@ jobs:
               sudo apt install -y python3 python3-pip
             fi
 
+            # Ensure pip is installed
+            if ! python3 -m pip --version &> /dev/null; then
+              echo "📦 Installing pip..."
+              sudo apt update
+              sudo apt install -y python3-pip
+            fi
+
             # Create deployment folder
             sudo mkdir -p /opt/demo-app
             sudo chown ubuntu:ubuntu /opt/demo-app
@@ -42,7 +49,8 @@ jobs:
             fi
 
             echo "📦 Installing Python requirements..."
-            # Use python3 -m pip to ensure we're using the correct pip
+            # Use ensurepip to install pip if missing
+            python3 -m ensurepip --upgrade || true
             python3 -m pip install --upgrade pip
             python3 -m pip install -r requirements.txt
 
@@ -53,13 +61,16 @@ jobs:
 
             echo "🚀 Starting Flask App..."
             # Use absolute path and better process management
+            cd /opt/demo-app
             nohup python3 app.py > app.log 2>&1 &
             echo $! > app.pid  # Save PID for future reference
 
             echo "✅ Verifying deployment..."
             sleep 5
-            if ps -p $(cat app.pid) > /dev/null 2>&1; then
+            if ps -p $(cat app.pid 2>/dev/null) > /dev/null 2>&1; then
               echo "🎉 Deployment completed successfully!"
+              echo "📊 Process info:"
+              ps -p $(cat app.pid)
             else
               echo "❌ Deployment failed - process not running"
               echo "📋 Checking app.log for errors:"
