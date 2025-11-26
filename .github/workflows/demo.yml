@@ -40,47 +40,76 @@ jobs:
             fi
 
             echo "📦 Installing Python requirements..."
-            pip3 install --break-system-packages -r requirements.txt
+            # Use --user flag to avoid permission issues
+            pip3 install --user --break-system-packages -r requirements.txt
 
             echo "🛑 Stopping old server..."
-            # Stop any running Flask app
-            sudo pkill -f "python3 app.py" || true
-            sleep 3
+            # More comprehensive process cleanup
+            sudo pkill -f "python3.*app.py" || true
+            sleep 5
+            # Double check and force kill if needed
+            sudo pkill -9 -f "python3.*app.py" || true
+            sleep 2
 
             echo "🚀 Starting Flask App..."
-            # Start the application directly
             cd /opt/demo-app
-            nohup python3 app.py > app.log 2>&1 &
-            echo $! > app.pid
-
-            echo "⏳ Waiting for app to start..."
-            sleep 8
+            
+            # Clean up any existing pid file
+            rm -f app.pid
+            
+            # Start the application with full path to python and explicit environment
+            /usr/bin/python3 app.py > app.log 2>&1 &
+            APP_PID=$!
+            echo $APP_PID > app.pid
+            
+            echo "Started app with PID: $APP_PID"
+            sleep 3
 
             echo "✅ Verifying deployment..."
-            # Check if process is running
-            if ps -p $(cat app.pid 2>/dev/null) > /dev/null 2>&1; then
-              echo "✅ Process is running with PID: $(cat app.pid)"
-              
-              echo "🌐 Testing application endpoint..."
-              # Test the application
-              if curl -s -f http://localhost:5000/ > /dev/null 2>&1; then
-                echo "🎉 SUCCESS: Application is running and responding correctly!"
-                echo "📝 Response: $(curl -s http://localhost:5000/)"
-              else
-                echo "⚠️ WARNING: Process running but app not responding on port 5000"
-                echo "📋 Checking network status..."
-                netstat -tulpn | grep :5000 || echo "Port 5000 not found in listening state"
-                echo "📄 App log contents:"
-                tail -20 app.log
-              fi
+            
+            # Check 1: Is the process still running?
+            if ps -p $APP_PID > /dev/null 2>&1; then
+              echo "✅ Main process $APP_PID is running"
             else
-              echo "❌ ERROR: Process failed to start"
-              echo "📄 Checking application logs:"
-              tail -50 app.log
-              echo "🔍 Checking Python processes:"
+              echo "❌ Main process $APP_PID stopped"
+              echo "📄 Checking app.log for errors:"
+              cat app.log
+              echo "🔍 Checking for any Python processes:"
               ps aux | grep python | grep -v grep
               exit 1
             fi
 
-            echo "🔒 Checking security group settings..."
-            echo "Note: Ensure your EC2 security group allows inbound traffic on port 5000"
+            # Check 2: Is the application listening on port 5000?
+            echo "🌐 Checking port 5000..."
+            if netstat -tulpn 2>/dev/null | grep :5000 > /dev/null; then
+              echo "✅ Port 5000 is listening"
+            else
+              echo "❌ Port 5000 is not listening"
+              echo "Checking with ss command:"
+              ss -tulpn | grep :5000 || echo "Port 5000 not found with ss"
+            fi
+
+            # Check 3: Test the application endpoint
+            echo "🔍 Testing application response..."
+            sleep 5
+            if curl -s -f http://localhost:5000/ > /dev/null 2>&1; then
+              echo "🎉 SUCCESS: Application is responding!"
+              echo "📝 Response: $(curl -s http://localhost:5000/)"
+            else
+              echo "⚠️ Application not responding to curl"
+              echo "Trying with verbose output:"
+              curl -v http://localhost:5000/ || true
+            fi
+
+            # Final process check
+            if ps -p $APP_PID > /dev/null 2>&1; then
+              echo "🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!"
+              echo "📊 Process details:"
+              ps -p $APP_PID -o pid,ppid,cmd
+              echo "🌐 Your app should be accessible at: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):5000/"
+            else
+              echo "❌ DEPLOYMENT FAILED - Process died"
+              echo "📄 Final app.log contents:"
+              tail -50 app.log
+              exit 1
+            fi
