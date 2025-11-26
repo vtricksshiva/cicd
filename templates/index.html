@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask UI Demo</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f1f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 380px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🚀 Deployed Successfully!</h1>
+        <p>This Flask application was deployed using GitHub Actions → AWS EC2.</p>
+
+        <button onclick="alert('Hello from your EC2 Instance!')">
+            Click Me
+        </button>
+    </div>
+
+</body>
+</html>
+
